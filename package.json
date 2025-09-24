@@ -1,0 +1,23 @@
+{
+  "name": "votacao_backend",
+  "version": "1.0.0",
+  "description": "Backend do sistema de votação",
+  "homepage": "https://github.com/Kai0ult/Votacao_backend#readme",
+  "bugs": {
+    "url": "https://github.com/Kai0ult/Votacao_backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kai0ult/Votacao_backend.git"
+  },
+  "license": "ISC",
+  "author": "Caio Souza & Igor Ryan",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
