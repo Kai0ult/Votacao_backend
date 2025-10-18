@@ -2,7 +2,7 @@ import Sequelize from 'sequelize'
 
 const DB_NAME = 'sistema_votacao'
 const USER_NAME = 'postgres'
-const PASSWORD = '97520'
+const PASSWORD = 'nt00384'
 const HOST = 'localhost'
 const PORT = 5432
 
