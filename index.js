@@ -1,7 +1,17 @@
 import express from 'express';
 import db from './models/index.js';
+import usuarioRoutas from './routes/usuario.js'
+import partidoRoutas from './routes/partido.js'
+import projetoRoutas from './routes/projeto.js'
 
 const app = express();
+
+app.use(express.json())
+
+// Rotas
+app.use('/api', usuarioRoutas)
+app.use('/api', partidoRoutas)
+app.use('/api', projetoRoutas)
 
 const iniciarServidor = async () => {
     try { 
