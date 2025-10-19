@@ -6,4 +6,5 @@ const router = express.Router()
 router.post('/usuarios', UsuarioController.cadastrar)
 router.get('/usuarios', UsuarioController.listar)
 
+
 export default router
