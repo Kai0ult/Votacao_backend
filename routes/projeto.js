@@ -6,4 +6,5 @@ const router = express.Router()
 router.post('/projetos', ProjetoController.cadastrar)
 router.get('/projetos', ProjetoController.listar)
 
+
 export default router

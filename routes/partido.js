@@ -6,4 +6,5 @@ const router = express.Router()
 router.post('/partidos', PartidoController.cadastrar)
 router.get('/partidos', PartidoController.listar)
 
+
 export default router
