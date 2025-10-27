@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import db from '../models/index.js'
+import passport from "passport";
 const { Usuario } = db
 
 class UsuarioController {
@@ -36,6 +37,40 @@ class UsuarioController {
         }
     }
 
+    login = (req, res, next) => {
+        passport.authenticate("usuario-local", (err, usuario, info) => {
+            if (err) return res.status(500).json({ mensagem: "Erro interno", erro: err })
+            if (!usuario)
+                return res.status(401).json({ mensagem: info?.message || "Credenciais inválidas" })
+
+            req.logIn(usuario, (erro) => {
+                if (erro) return res.status(500).json({ mensagem: "Erro ao criar sessão" })
+                return res.json({
+                    mensagem: "Login realizado com sucesso!",
+                    usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email },
+                })
+            })
+        })(req, res, next)
+    }
+
+    // Retorna usuário logado
+    me = (req, res) => {
+        if (!req.isAuthenticated())
+            return res.status(401).json({ mensagem: "Não autenticado" })
+        return res.json(req.user)
+    }
+
+    // Logout
+    logout = (req, res) => {
+        req.logout((err) => {
+            if (err) return res.status(500).json({ mensagem: "Erro ao sair" })
+            req.session.destroy(() => {
+                res.clearCookie("connect.sid")
+                res.json({ mensagem: "Logout realizado com sucesso" })
+            })
+        })
+    }
+
     // Listar
     listar = async (req, res) => {
         try {
@@ -45,7 +80,7 @@ class UsuarioController {
             console.error('Erro ao listar usuários:', erro)
             res.status(500).json({ mensagem: 'Erro interno ao listar usuários', erro: erro.message })
         }
-    };
+    }
 
     // Editar
     editar = async (req, res) => {
@@ -58,7 +93,7 @@ class UsuarioController {
                 return res.status(404).json({ mensagem: 'Usuário não encontrado!' })
             }
 
-            
+
             if (email && email !== usuario.email) {
                 const userExistente = await Usuario.findOne({ where: { email } })
                 if (userExistente) {
@@ -66,7 +101,7 @@ class UsuarioController {
                 }
             }
 
-            
+
             if (partido_id && partido_id !== usuario.partido_id) {
                 const partidoExistente = await db.Partido.findByPk(partido_id)
                 if (!partidoExistente) {
