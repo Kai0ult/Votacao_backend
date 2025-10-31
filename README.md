@@ -134,42 +134,7 @@ FRONTEND_URL=http://localhost:3001](http://localhost:5173
 ```bash
 node index.js
  ```
-
 ---
-
-## 📡 Endpoints da API
-
-### 🔐 Autenticação
-- `POST /api/login` - Login de usuário
-- `POST /api/logout` - Logout
-- `GET /api/me` - Usuário logado
-
-### 👥 Usuários
-- `POST /api/usuarios` - Criar usuário
-- `GET /api/usuarios` - Listar usuários
-- `PUT /api/usuarios/:id` - Atualizar usuário
-- `DELETE /api/usuarios/:id` - Excluir usuário
-
-### 🏛️ Partidos
-- `POST /api/partidos` - Criar partido
-- `GET /api/partidos` - Listar partidos
-- `PUT /api/partidos/:id` - Atualizar partido
-- `DELETE /api/partidos/:id` - Excluir partido
-
-### 📋 Projetos
-- `POST /api/projetos` - Criar projeto
-- `GET /api/projetos` - Listar projetos
-- `PUT /api/projetos/:id` - Atualizar projeto
-- `DELETE /api/projetos/:id` - Excluir projeto
-
-## 🔒 Estrutura de Autenticação
-
-O sistema utiliza:
-- **Passport Local Strategy** para autenticação
-- **Sessões armazenadas no PostgreSQL** para persistência
-- **bcrypt** para hash de senhas
-- **CORS configurado** para comunicação com frontend
-
 ### 👨‍💻 Autores
 
 - Desenvolvido por Caio Souza, Igor Ryan & Tamara Silva.
