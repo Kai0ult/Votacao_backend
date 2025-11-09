@@ -1,11 +1,15 @@
-import express from 'express'
-import PartidoController from '../controllers/PartidoController.js'
+import express from "express";
+import PartidoController from "../controllers/PartidoController.js";
+import { ensureAuthenticated, checkRole } from "../config/autenticacao.js"; // caminho corrigido
 
-const router = express.Router()
+const router = express.Router();
 
-router.post('/partidos', PartidoController.cadastrar)
-router.get('/partidos', PartidoController.listar)
-router.put('/partidos/:id', PartidoController.editar)
-router.delete('/partidos/:id', PartidoController.excluir)
+// Listar (usuário logado pode ver)
+router.get("/partidos", ensureAuthenticated, PartidoController.listar);
 
-export default router
+// Ações restritas ao admin (tipo = 2)
+router.post("/partidos", ensureAuthenticated, checkRole(2), PartidoController.cadastrar);
+router.put("/partidos/:id", ensureAuthenticated, checkRole(2), PartidoController.editar);
+router.delete("/partidos/:id", ensureAuthenticated, checkRole(2), PartidoController.excluir);
+
+export default router;
