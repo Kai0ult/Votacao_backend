@@ -1,11 +1,15 @@
-import express from 'express'
-import ProjetoController from '../controllers/ProjetoController.js'
+import express from "express";
+import ProjetoController from "../controllers/ProjetoController.js";
+import { ensureAuthenticated, checkRole } from "../config/autenticacao.js"; // caminho corrigido
 
-const router = express.Router()
+const router = express.Router();
 
-router.post('/projetos', ProjetoController.cadastrar)
-router.get('/projetos', ProjetoController.listar)
-router.put('/projetos/:id', ProjetoController.editar)
-router.delete('/projetos/:id', ProjetoController.excluir)
+// Listar (usuários logados podem ver)
+router.get("/projetos", ensureAuthenticated, ProjetoController.listar);
 
-export default router
+// Ações restritas ao admin (tipo = 2)
+router.post("/projetos", ensureAuthenticated, checkRole(2), ProjetoController.cadastrar);
+router.put("/projetos/:id", ensureAuthenticated, checkRole(2), ProjetoController.editar);
+router.delete("/projetos/:id", ensureAuthenticated, checkRole(2), ProjetoController.excluir);
+
+export default router;

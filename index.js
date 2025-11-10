@@ -11,6 +11,7 @@ import inicializarPassport from "./config/autenticacao.js"
 import dotenv from 'dotenv'
 import pkg from 'pg'
 
+
 const { Pool } = pkg
 dotenv.config()
 
