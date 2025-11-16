@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import db from '../models/index.js'
 import passport from "passport";
+import { validaCpf, validaEmail, validaSenha } from '../utils/validators.js';
 const { Usuario } = db
 
 class UsuarioController {
@@ -12,6 +13,24 @@ class UsuarioController {
             const userExistente = await Usuario.findOne({ where: { email } })
             if (userExistente) {
                 return res.status(400).json({ mensagem: 'Usuário já cadastrado!' })
+            }
+
+            const validacaoEmail = validaEmail(email)
+            if (!validacaoEmail.eValido){
+                return res.status(400).json({ mensagem: validacaoEmail.erros[0] });
+            }
+
+            const validacaoCPF = validaCpf(cpf)
+            if (!validacaoCPF.eValido){
+                return res.status(400).json({ mensagem: validacaoCPF.erros[0] });
+            }
+
+            const validacaoSenha = validaSenha(senha);
+            if (!validacaoSenha.eValido) {
+                return res.status(400).json({ 
+                    mensagem: 'A senha não atende aos requisitos.', 
+                    erros: validacaoSenha.erros 
+                });
             }
 
             const senhaCriptografada = await bcrypt.hash(senha, 10)
