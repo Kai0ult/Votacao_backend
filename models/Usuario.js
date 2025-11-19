@@ -36,9 +36,10 @@ Usuario.associate = (modelos) => {
     });
     Usuario.hasMany(modelos.Projeto,{
         foreignKey: 'usuario_id'
+    });
+    Usuario.hasMany(modelos.Voto,{
+        foreignKey: 'usuario_id'
     })
 };
-//https://sequelize.org/docs/v7/associations/faq/#ondelete-and-onupdate
-//https://sequelize.org/docs/v6/core-concepts/assocs/
 
 export default Usuario

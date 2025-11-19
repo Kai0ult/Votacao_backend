@@ -32,6 +32,9 @@ Projeto.associate = (modelos) => {
         constraint: true,
         onDelete: 'RESTRICT',
         as: 'usuario'
+    });
+    Projeto.hasMany(modelos.Voto,{
+        foreignKey: 'projeto_id'
     })
 }
 
