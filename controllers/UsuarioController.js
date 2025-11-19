@@ -8,7 +8,7 @@ class UsuarioController {
     // Cadastrar
     cadastrar = async (req, res) => {
         try {
-            const { nome, email, senha, cpf, tipo, partido_id } = req.body
+            const { nome, email, senha, cpf, partido_id } = req.body
 
             const userExistente = await Usuario.findOne({ where: { email } })
             if (userExistente) {
@@ -35,16 +35,14 @@ class UsuarioController {
 
             const senhaCriptografada = await bcrypt.hash(senha, 10)
 
-            const partidoExistente = await db.Partido.findByPk(partido_id)
-            if (!partidoExistente) {
-                Usuario.create({
-                nome,
-                email,
-                senha: senhaCriptografada,
-                cpf,
-                tipo: 2,
-                partido_id: null
-            })
+            let tipo = 1
+            if (!partido_id || partido_id === null) {
+                tipo = 2
+            } else {
+                const partidoExistente = await db.Partido.findByPk(partido_id)
+                if (!partidoExistente) {
+                    return res.status(400).json({ mensagem: 'Partido informado não existe!' })
+                }
             }
 
             const novoUsuario = await Usuario.create({
@@ -53,7 +51,7 @@ class UsuarioController {
                 senha: senhaCriptografada,
                 cpf,
                 tipo,
-                partido_id
+                partido_id: partido_id || null
             })
 
             res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!', usuario: novoUsuario })
@@ -73,7 +71,7 @@ class UsuarioController {
                 if (erro) return res.status(500).json({ mensagem: "Erro ao criar sessão" })
                 return res.json({
                     mensagem: "Login realizado com sucesso!",
-                    usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email },
+                    usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, tipo:usuario.tipo },
                 })
             })
         })(req, res, next)

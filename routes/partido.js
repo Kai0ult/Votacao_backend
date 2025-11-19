@@ -5,7 +5,7 @@ import { ensureAuthenticated, checkRole } from "../config/autenticacao.js"; // c
 const router = express.Router();
 
 // Listar (usuário logado pode ver)
-router.get("/partidos", ensureAuthenticated, PartidoController.listar);
+router.get("/partidos", PartidoController.listar);
 
 // Ações restritas ao admin (tipo = 2)
 router.post("/partidos", ensureAuthenticated, checkRole(2), PartidoController.cadastrar);
