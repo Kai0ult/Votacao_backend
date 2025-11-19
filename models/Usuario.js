@@ -23,7 +23,7 @@ const Usuario = banco.sequelize.define('Usuario',{
     },
     partido_id: {
         type: banco.Sequelize.INTEGER,
-        allowNull: false
+        allowNull: true
     }
 })
 

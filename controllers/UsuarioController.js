@@ -18,7 +18,14 @@ class UsuarioController {
 
             const partidoExistente = await db.Partido.findByPk(partido_id)
             if (!partidoExistente) {
-                return res.status(400).json({ mensagem: 'Partido informado não existe!' })
+                Usuario.create({
+                nome,
+                email,
+                senha: senhaCriptografada,
+                cpf,
+                tipo: 2,
+                partido_id: null
+            })
             }
 
             const novoUsuario = await Usuario.create({
