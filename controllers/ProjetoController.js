@@ -82,6 +82,47 @@ class ProjetoController {
       res.status(500).json({ mensagem: 'Erro interno ao excluir projeto', erro: erro.message })
     }
   }
+
+  obterResultado = async (req, res) => {
+    try {
+      const { id } = req.params
+      const contagem = await Voto.findAll({
+        where: { projeto_id: id },
+        attributes: [
+          'opcao',
+          [Sequelize.fn('COUNT', Sequelize.col('usuario_id')), 'total_votos']
+        ],
+        group: ['opcao'],
+        raw: true
+      })
+
+      const resultadoFormatado = {
+        sim: 0,
+        nao: 0,
+        abstencao: 0
+      }
+
+      for(let item of contagem){
+        if (item.opcao === 1)
+          resultadoFormatado.sim = Number.parseInt(item.total_votos);
+        if (item.opcao === 2) 
+          resultadoFormatado.nao = Number.parseInt(item.total_votos);
+        if (item.opcao === 3) 
+          resultadoFormatado.abstencao = Number.parseInt(item.total_votos);
+      }
+
+      const totalGeral = resultadoFormatado.sim + resultadoFormatado.nao + resultadoFormatado.abstencao;
+
+      return res.status(200).json({
+        projeto_id: id,
+        total_votos: totalGeral,
+        detalhes: resultadoFormatado
+      });
+    } catch (error) {
+      console.error('Erro ao calcular resultados.', error)
+      res.status(500).json({ mensagem: 'Erro ao calcular resultados.', erro: error.message})
+    }
+  }
 }
 
 export default new ProjetoController()
