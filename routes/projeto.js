@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Listar (usuários logados podem ver)
 router.get("/projetos", ensureAuthenticated, ProjetoController.listar);
+router.get("/projetos/:id", ensureAuthenticated, ProjetoController.buscarPorId);
 
 // Ações restritas ao admin (tipo = 2)
 router.post("/projetos", ensureAuthenticated, checkRole(2), ProjetoController.cadastrar);
