@@ -110,7 +110,7 @@ class UsuarioController {
     editar = async (req, res) => {
         try {
             const { id } = req.params
-            const { nome, email, senha, cpf, tipo, partido_id } = req.body
+            const { nome, email, senhaAtual, senhaNova, cpf, tipo, partido_id } = req.body
 
             const usuario = await Usuario.findByPk(id)
             if (!usuario) {
@@ -135,9 +135,26 @@ class UsuarioController {
 
             const dadosAtualizacao = { nome, email, cpf, tipo, partido_id }
 
+            if ((senhaNova && !senhaAtual) || (!senhaNova && senhaAtual)) {
+                return res.status(400).json({ 
+                    mensagem: 'Para alterar a senha, preencha tanto a senha atual quanto a nova.' 
+                });
+            }
             // Se uma nova senha foi fornecida, criptografar
-            if (senha) {
-                dadosAtualizacao.senha = await bcrypt.hash(senha, 10)
+            if (senhaNova && senhaAtual) {
+                const senhaAtualValida = await bcrypt.compare(senhaAtual, usuario.senha);
+                if(senhaAtualValida){
+                    const validacaoSenhaNova = validaSenha(senhaNova);
+                    if (!validacaoSenhaNova.eValido) {
+                        return res.status(400).json({ 
+                            mensagem: 'A senha nova não atende aos requisitos.', 
+                            erros: validacaoSenhaNova.erros 
+                        });
+                    }
+                    dadosAtualizacao.senha = await bcrypt.hash(senhaNova, 10)
+                }else{
+                    return res.status(401).json({ mensagem: 'Senha atual incorreta.'})
+                }
             }
 
             await usuario.update(dadosAtualizacao)
