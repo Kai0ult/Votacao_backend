@@ -11,5 +11,8 @@ router.get("/projetos", ensureAuthenticated, ProjetoController.listar);
 router.post("/projetos", ensureAuthenticated, checkRole(2), ProjetoController.cadastrar);
 router.put("/projetos/:id", ensureAuthenticated, checkRole(2), ProjetoController.editar);
 router.delete("/projetos/:id", ensureAuthenticated, checkRole(2), ProjetoController.excluir);
+router.get("/projetos/:id/resultado", ensureAuthenticated, ProjetoController.obterResultado);
+router.get("/projetos/:id/resultadoPartido", ensureAuthenticated, ProjetoController.obterResultadoPorPartido);
+router.get("/projetos/:id/resultadoDetalhado", ensureAuthenticated, ProjetoController.obterResultadoPorVereador);
 
 export default router;
