@@ -1,0 +1,36 @@
+import banco from "../config/banco.js";
+
+const Voto = banco.sequelize.define('Voto',{
+    opcao:{
+        type: banco.Sequelize.INTEGER
+    },
+    usuario_id: {
+        type: banco.Sequelize.INTEGER,
+        primaryKey: true,
+        allowNull: false
+    },
+    projeto_id: {
+        type: banco.Sequelize.INTEGER,
+        primaryKey: true,
+        allowNull: false
+    }
+}, {
+    timestamps: true  // Habilita createdAt e updatedAt
+})
+
+Voto.associate = (modelos) => {
+    Voto.belongsTo(modelos.Usuario, {
+        foreignKey: 'usuario_id',
+        constraint: true,
+        onDelete: 'RESTRICT',
+        as: 'usuario'
+    });
+    Voto.belongsTo(modelos.Projeto, {
+        foreignKey: 'projeto_id',
+        constraint: true,
+        onDelete: 'RESTRICT',
+        as: 'projeto'
+    })
+}
+
+export default Voto

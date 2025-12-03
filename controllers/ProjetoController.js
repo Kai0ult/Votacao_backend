@@ -32,6 +32,22 @@ class ProjetoController {
     }
   };
 
+  buscarPorId = async (req, res) => {
+    try {
+      const { id } = req.params
+      const projeto = await Projeto.findByPk(id)
+      
+      if (!projeto) {
+        return res.status(404).json({ mensagem: 'Projeto não encontrado!' })
+      }
+      
+      res.status(200).json(projeto)
+    } catch (erro) {
+      console.error('Erro ao buscar projeto:', erro)
+      res.status(500).json({ mensagem: 'Erro interno ao buscar projeto', erro: erro.message })
+    }
+  }
+
   editar = async (req, res) => {
     try {
       const { id } = req.params
