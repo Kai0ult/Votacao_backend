@@ -4,7 +4,7 @@ const { Projeto, Voto, Usuario, Partido} = db
 class ProjetoController {
   cadastrar = async (req, res) => {
     try {
-      const { titulo, ementa, autor, tipo, dt_votacao, usuario_id } = req.body
+      const { titulo, ementa, autor, tipo, dt_votacao, usuario_id, estado } = req.body
 
       const novoProjeto = await Projeto.create({
         titulo,
@@ -12,7 +12,8 @@ class ProjetoController {
         autor,
         tipo,
         dt_votacao,
-        usuario_id
+        usuario_id,
+        estado: null
       })
 
       res.status(201).json({ mensagem: 'Projeto cadastrado com sucesso!', projeto: novoProjeto })
@@ -35,7 +36,7 @@ class ProjetoController {
   editar = async (req, res) => {
     try {
       const { id } = req.params
-      const { titulo, ementa, autor, tipo, dt_votacao, usuario_id } = req.body
+      const { titulo, ementa, autor, tipo, dt_votacao, usuario_id, estado } = req.body
 
       const projeto = await Projeto.findByPk(id)
       if (!projeto) {
@@ -56,7 +57,8 @@ class ProjetoController {
         autor,
         tipo,
         dt_votacao,
-        usuario_id
+        usuario_id,
+        estado
       })
 
       res.status(200).json({ mensagem: 'Projeto atualizado com sucesso!', projeto })
@@ -80,6 +82,23 @@ class ProjetoController {
     } catch (erro) {
       console.error('Erro ao excluir projeto:', erro)
       res.status(500).json({ mensagem: 'Erro interno ao excluir projeto', erro: erro.message })
+    }
+  }
+
+  buscarPorId = async (req, res) => {
+    try {
+      const { id } = req.params
+
+      const projeto = await Projeto.findByPk(id)
+
+      if (!projeto) {
+        return res.status(404).json({ mensagem: "Projeto não encontrado!" })
+      }
+
+      res.json(projeto)
+    } catch (erro) {
+      console.error("Erro ao buscar projeto:", erro)
+      res.status(500).json({ mensagem: "Erro interno", erro: erro.message })
     }
   }
 
