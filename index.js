@@ -3,6 +3,7 @@ import db from './models/index.js'
 import usuarioRoutas from './routes/usuario.js'
 import partidoRoutas from './routes/partido.js'
 import projetoRoutas from './routes/projeto.js'
+import votacaoRoutas from './routes/votacao.js'
 import cors from "cors"
 import session from "express-session"
 import passport from "passport"
@@ -77,6 +78,7 @@ inicializarPassport(passport)
 app.use('/api', usuarioRoutas)
 app.use('/api', partidoRoutas)
 app.use('/api', projetoRoutas)
+app.use('/api', votacaoRoutas)
 
 const iniciarServidor = async () => {
   try {

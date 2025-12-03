@@ -211,6 +211,23 @@ class ProjetoController {
       res.status(500).json({ mensagem: 'Erro ao buscar votos detalhados.', erro: error.message})
     }
   }
+
+  buscarPorId = async (req, res) => {
+    try {
+      const { id } = req.params
+
+      const projeto = await Projeto.findByPk(id)
+
+      if (!projeto) {
+        return res.status(404).json({ mensagem: "Projeto não encontrado!" })
+      }
+
+      res.json(projeto)
+    } catch (erro) {
+      console.error("Erro ao buscar projeto:", erro)
+      res.status(500).json({ mensagem: "Erro interno", erro: erro.message })
+    }
+  }
 }
 
 export default new ProjetoController()
