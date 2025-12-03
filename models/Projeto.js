@@ -18,6 +18,9 @@ const Projeto = banco.sequelize.define('Projeto',{
     tipo:{
         type: banco.Sequelize.STRING(100)
     },
+    estado:{
+        type: banco.Sequelize.INTEGER
+    },
     dt_votacao:{
         type: banco.Sequelize.DATE
     },
