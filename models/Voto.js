@@ -6,10 +6,12 @@ const Voto = banco.sequelize.define('Voto',{
     },
     usuario_id: {
         type: banco.Sequelize.INTEGER,
+        primaryKey: true,
         allowNull: false
     },
     projeto_id: {
         type: banco.Sequelize.INTEGER,
+        primaryKey: true,
         allowNull: false
     }
 })
