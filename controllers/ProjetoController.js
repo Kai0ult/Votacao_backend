@@ -1,5 +1,5 @@
 import db from '../models/index.js'
-const { Projeto } = db
+const { Projeto, Voto, Usuario, Partido} = db
 
 class ProjetoController {
   cadastrar = async (req, res) => {
@@ -83,20 +83,132 @@ class ProjetoController {
     }
   }
 
-  buscarPorId = async (req, res) => {
+  obterResultado = async (req, res) => {
     try {
       const { id } = req.params
+      const contagem = await Voto.findAll({
+        where: { projeto_id: id },
+        attributes: [
+          'opcao',
+          [db.Sequelize.fn('COUNT', db.Sequelize.col('usuario_id')), 'total_votos']
+        ],
+        group: ['opcao'],
+        raw: true
+      })
 
-      const projeto = await Projeto.findByPk(id)
-
-      if (!projeto) {
-        return res.status(404).json({ mensagem: "Projeto não encontrado!" })
+      const resultadoFormatado = {
+        sim: 0,
+        nao: 0,
+        abstencao: 0
       }
 
-      res.json(projeto)
-    } catch (erro) {
-      console.error("Erro ao buscar projeto:", erro)
-      res.status(500).json({ mensagem: "Erro interno", erro: erro.message })
+      for(let item of contagem){
+        if (item.opcao === 1)
+          resultadoFormatado.sim = Number.parseInt(item.total_votos);
+        if (item.opcao === 2) 
+          resultadoFormatado.nao = Number.parseInt(item.total_votos);
+        if (item.opcao === 3) 
+          resultadoFormatado.abstencao = Number.parseInt(item.total_votos);
+      }
+
+      const totalGeral = resultadoFormatado.sim + resultadoFormatado.nao + resultadoFormatado.abstencao;
+
+      return res.status(200).json({
+        projeto_id: id,
+        total_votos: totalGeral,
+        detalhes: resultadoFormatado
+      });
+    } catch (error) {
+      console.error('Erro ao calcular resultados.', error)
+      res.status(500).json({ mensagem: 'Erro ao calcular resultados.', erro: error.message})
+    }
+  }
+
+  obterResultadoPorPartido = async (req, res) => {
+    try {
+      const { id } = req.params
+      const votos = await Voto.findAll({
+        where: { projeto_id: id },
+        include: [{
+          model: Usuario,
+          as: 'usuario',
+          attributes: ['nome'],
+          include: [{
+            model: Partido,
+            as: 'partido',
+            attributes: ['sigla', 'nome']
+          }]
+        }]
+      })
+
+      const resultado = {};
+
+      for(let voto of votos ){
+        const siglaPartido = voto.usuario?.partido?.sigla || 'Sem Partido';
+        
+        if (!resultado[siglaPartido]) {
+          resultado[siglaPartido] = { sim: 0, nao: 0, abstencao: 0 };
+        }
+
+        if (voto.opcao === 1)
+          resultado[siglaPartido].sim++;
+        else if (voto.opcao === 2)
+          resultado[siglaPartido].nao++;
+        else if (voto.opcao === 3)
+          resultado[siglaPartido].abstencao++;
+      }
+
+      return res.status(200).json({
+        projeto_id: id,
+        total_votos: votos.length,
+        por_partido: resultado
+      });
+    } catch (error) {
+      console.error('Erro ao agrupar por partido:', error)
+      res.status(500).json({ mensagem: 'Erro ao calcular resultados por partido.', erro: error.message})
+    }
+  }
+
+  obterResultadoPorVereador = async (req, res) => {
+    try {
+      const { id } = req.params
+      const votos = await Voto.findAll({
+        where: { projeto_id: id },
+        include: [{
+          model: Usuario,
+          as: 'usuario',
+          attributes: ['nome'],
+          include: [{
+            model: Partido,
+            as: 'partido',
+            attributes: ['sigla']
+          }]
+        }]
+      })
+
+      const listaVotos = votos.map(voto => {
+        let textoVoto = '';
+        switch(voto.opcao) {
+          case 1: textoVoto = 'Sim'; break;
+          case 2: textoVoto = 'Não'; break;
+          case 3: textoVoto = 'Abstenção'; break;
+          default: textoVoto = 'Desconhecido';
+        }
+
+        return {
+          vereador: voto.usuario.nome,
+          partido: voto.usuario.partido ? voto.usuario.partido.sigla : 'Sem Partido',
+          voto: textoVoto
+        };
+      });
+
+      return res.status(200).json({
+        projeto_id: id,
+        listagem: listaVotos
+      })
+    } catch (error) {
+      console.error('Erro ao listar votos por vereador:', error)
+      res.status(500).json({ mensagem: 'Erro ao buscar votos detalhados.', erro: error.message})
     }
   }
 }
