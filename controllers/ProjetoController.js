@@ -244,6 +244,7 @@ class ProjetoController {
       include: [{
         model: Usuario,
         as: 'usuario',
+        where: { tipo: 1 },
         attributes: ['nome'],
         include: [{
           model: Partido,
@@ -391,19 +392,7 @@ class ProjetoController {
         return res.status(404).json({ mensagem: "Projeto não encontrado!" });
       }
 
-      const votos = await Voto.findAll({
-        where: { projeto_id: id },
-        include: [{
-          model: Usuario,
-          as: 'usuario',
-          attributes: ['nome'],
-          include: [{
-            model: Partido,
-            as: 'partido',
-            attributes: ['sigla']
-          }]
-        }]
-      });
+      const votos = await this._buscarVotosDetalhados(id);
 
       const dadosParaCSV = votos.map(voto => {
         let textoVoto = '';
