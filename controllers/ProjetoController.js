@@ -193,19 +193,7 @@ class ProjetoController {
   obterResultadoPorVereador = async (req, res) => {
     try {
       const { id } = req.params
-      const votos = await Voto.findAll({
-        where: { projeto_id: id },
-        include: [{
-          model: Usuario,
-          as: 'usuario',
-          attributes: ['nome'],
-          include: [{
-            model: Partido,
-            as: 'partido',
-            attributes: ['sigla']
-          }]
-        }]
-      })
+      const votos = await this._buscarVotosDetalhados(id);
 
       const listaVotos = votos.map(voto => {
         let textoVoto = '';
@@ -250,6 +238,23 @@ class ProjetoController {
     }
   }
 
+  _buscarVotosDetalhados = async (projetoId) => {
+    return await Voto.findAll({
+      where: { projeto_id: projetoId },
+      include: [{
+        model: Usuario,
+        as: 'usuario',
+        attributes: ['nome'],
+        include: [{
+          model: Partido,
+          as: 'partido',
+          attributes: ['sigla']
+        }]
+      }],
+      order: [['usuario', 'nome', 'ASC']]
+    });
+  }
+
   downloadRelatorioPDF = async (req, res) => {
     try{
       const { id } = req.params;
@@ -276,6 +281,24 @@ class ProjetoController {
         if (item.opcao === 3) abstencao = Number.parseInt(item.total_votos);
       });
 
+      const listaVotos = await this._buscarVotosDetalhados(id);
+
+      const linhasTabela = listaVotos.map(voto => {
+        let texto = 'Desconhecido';
+
+        if (voto.opcao === 1) { texto = 'Sim'; }
+        if (voto.opcao === 2) { texto = 'Não'; }
+        if (voto.opcao === 3) { texto = 'Abstenção'; }
+
+        return `
+          <tr>
+            <td>${voto.usuario?.nome || 'Desconhecido'}</td>
+            <td>${voto.usuario?.partido?.sigla || 'S/P'}</td>
+            <td style="font-weight: bold;">${texto}</td>
+          </tr>
+        `;
+      }).join('');
+
       const browser = await puppeteer.launch({ 
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -287,27 +310,52 @@ class ProjetoController {
           <head>
             <style>
               body { font-family: Arial, sans-serif; padding: 40px; }
-              h1 { color: #333; }
-              .card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; }
-              .resultado { font-size: 18px; margin-top: 10px; }
+              h1 { margin-bottom: 5px;color: #333; }
+              .header { margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+
+              .resultado { 
+                display: flex; gap: 20px; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px;
+              }
+              .stat { font-size: 16px; margin-right: 15px; }
+
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { text-align: left; padding: 10px; border-bottom: 1px solid #ddd; }
+              th { background-color: #f2f2f2; }
+              tr:nth-child(even) { background-color: #fafafa; }
             </style>
           </head>
           <body>
-            <h1>Relatório de Votação</h1>
-            <div class="card">
+            <div class="header">
+              <h1>Relatório de Votação</h1>
               <h2>${projeto.titulo}</h2>
               <p><strong>Ementa:</strong> ${projeto.ementa}</p>
               <p><strong>Autor:</strong> ${projeto.autor}</p>
             </div>
             
-            <h3>Resultado:</h3>
+            <h3>Resumo da Votação</h3>
             <div class="resultado">
-              <p>- Sim: ${sim}</p>
-              <p>- Não: ${nao}</p>
-              <p>- Abstenção: ${abstencao}</p>
-              <hr/>
-              <p><strong>Total de Votos:</strong> ${sim + nao + abstencao}</p>
+              <span class="stat" style="color: green"> Sim: ${sim}</span>
+              <span class="stat" style="color: red"> Não: ${nao}</span>
+              <span class="stat" style="color: gray"> Abstenção: ${abstencao}</span>
+              <span class="stat"><strong>Total: ${sim+nao+abstencao}</strong></span>
             </div>
+
+            <h3>Detalhamento dos Votos</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Vereador</th>
+                  <th>Partido</th>
+                  <th>Voto</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${linhasTabela} </tbody>
+            </table>
+
+            <p style="margin-top: 40px; font-size: 12px; color: #777;">
+              Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}
+            </p>
           </body>
         </html>
       `;
