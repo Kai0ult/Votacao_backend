@@ -15,5 +15,7 @@ router.delete("/projetos/:id", ensureAuthenticated, checkRole(2), ProjetoControl
 router.get("/projetos/:id/resultado", ensureAuthenticated, ProjetoController.obterResultado);
 router.get("/projetos/:id/resultadoPartido", ensureAuthenticated, ProjetoController.obterResultadoPorPartido);
 router.get("/projetos/:id/resultadoDetalhado", ensureAuthenticated, ProjetoController.obterResultadoPorVereador);
+router.get("/projetos/:id/relatorioPdf", ensureAuthenticated, ProjetoController.downloadRelatorioPDF);
+router.get("/projetos/:id/relatorioCsv", ensureAuthenticated, ProjetoController.downloadRelatorioCSV);
 
 export default router;
