@@ -1,6 +1,6 @@
 import db from '../models/index.js'
 import puppeteer from 'puppeteer';
-
+import { Parser } from 'json2csv';
 const { Projeto, Voto, Usuario, Partido} = db
 
 class ProjetoController {
@@ -331,6 +331,59 @@ class ProjetoController {
     }catch (error){
       console.error('Erro ao gerar PDF:', error);
       res.status(500).json({ mensagem: 'Erro ao gerar PDF.', erro: error.message})
+    }
+  }
+
+  downloadRelatorioCSV = async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const projeto = await Projeto.findByPk(id);
+      if (!projeto) {
+        return res.status(404).json({ mensagem: "Projeto não encontrado!" });
+      }
+
+      const votos = await Voto.findAll({
+        where: { projeto_id: id },
+        include: [{
+          model: Usuario,
+          as: 'usuario',
+          attributes: ['nome'],
+          include: [{
+            model: Partido,
+            as: 'partido',
+            attributes: ['sigla']
+          }]
+        }]
+      });
+
+      const dadosParaCSV = votos.map(voto => {
+        let textoVoto = '';
+        switch(voto.opcao) {
+          case 1: textoVoto = 'Sim'; break;
+          case 2: textoVoto = 'Não'; break;
+          case 3: textoVoto = 'Abstenção'; break;
+          default: textoVoto = 'Desconhecido';
+        }
+
+        return {
+          Vereador: voto.usuario?.nome || 'Desconhecido',
+          Partido: voto.usuario?.partido?.sigla || 'S/P',
+          Voto: textoVoto,
+          Data: new Date(voto.createdAt).toLocaleDateString('pt-BR')
+        };
+      });
+
+      const campos = ['Vereador', 'Partido', 'Voto', 'Data'];
+      const json2csvParser = new Parser({ fields: campos, delimiter: ';' });
+      const csv = json2csvParser.parse(dadosParaCSV);
+
+      res.header('Content-Type', 'text/csv');
+      res.attachment(`votos_projeto_${id}.csv`);
+      return res.send(csv);
+    } catch (error) {
+      console.error('Erro ao gerar CSV:', error);
+      res.status(500).json({ mensagem: 'Erro ao gerar CSV.', erro: error.message });
     }
   }
 }
