@@ -1,4 +1,5 @@
 import db from '../models/index.js'
+import { importarPartidosEmMassa } from '../utils/partidoUtils.js'
 const { Partido } = db
 
 class PartidoController {
@@ -73,6 +74,20 @@ class PartidoController {
     } catch (erro) {
       console.error('Erro ao excluir partido:', erro)
       res.status(500).json({ mensagem: 'Erro interno ao excluir partido', erro: erro.message })
+    }
+  }
+
+  cadastrarEmMassa = async (req, res) => {
+    try {
+      const listaPartidos = req.body;
+      const resultado = await importarPartidosEmMassa(listaPartidos);
+      res.status(201).json({
+        mensagem: 'Importação de varios partidos concluído',
+        detalhes: resultado
+      });
+    } catch (erro) {
+      console.error('Erro na importação:', erro);
+      res.status(500).json({ mensagem: 'Erro na importação', erro: erro.message });
     }
   }
 }

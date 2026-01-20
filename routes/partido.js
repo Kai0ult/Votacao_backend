@@ -11,5 +11,6 @@ router.get("/partidos", PartidoController.listar);
 router.post("/partidos", ensureAuthenticated, checkRole(2), PartidoController.cadastrar);
 router.put("/partidos/:id", ensureAuthenticated, checkRole(2), PartidoController.editar);
 router.delete("/partidos/:id", ensureAuthenticated, checkRole(2), PartidoController.excluir);
+router.post("/partidos/importar", ensureAuthenticated, checkRole(2), PartidoController.cadastrarEmMassa);
 
 export default router;
