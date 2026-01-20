@@ -1,4 +1,6 @@
 import db from '../models/index.js'
+import puppeteer from 'puppeteer';
+
 const { Projeto, Voto, Usuario, Partido} = db
 
 class ProjetoController {
@@ -245,6 +247,90 @@ class ProjetoController {
     } catch (erro) {
       console.error("Erro ao buscar projeto:", erro)
       res.status(500).json({ mensagem: "Erro interno", erro: erro.message })
+    }
+  }
+
+  downloadRelatorioPDF = async (req, res) => {
+    try{
+      const { id } = req.params;
+      
+      const projeto = await Projeto.findByPk(id);
+      if (!projeto) {
+        return res.status(404).json({ mensagem: "Projeto não encontrado!" });
+      }
+
+      const contagem = await Voto.findAll({
+        where: { projeto_id: id },
+        attributes: [
+          'opcao',
+          [db.Sequelize.fn('COUNT', db.Sequelize.col('usuario_id')), 'total_votos']
+        ],
+        group: ['opcao'],
+        raw: true
+      });
+
+      let sim = 0, nao = 0, abstencao = 0;
+      contagem.forEach(item => {
+        if (item.opcao === 1) sim = Number.parseInt(item.total_votos);
+        if (item.opcao === 2) nao = Number.parseInt(item.total_votos);
+        if (item.opcao === 3) abstencao = Number.parseInt(item.total_votos);
+      });
+
+      const browser = await puppeteer.launch({ 
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      const page = await browser.newPage();
+
+      const conteudoHTML = `
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; }
+              h1 { color: #333; }
+              .card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; }
+              .resultado { font-size: 18px; margin-top: 10px; }
+            </style>
+          </head>
+          <body>
+            <h1>Relatório de Votação</h1>
+            <div class="card">
+              <h2>${projeto.titulo}</h2>
+              <p><strong>Ementa:</strong> ${projeto.ementa}</p>
+              <p><strong>Autor:</strong> ${projeto.autor}</p>
+            </div>
+            
+            <h3>Resultado:</h3>
+            <div class="resultado">
+              <p>- Sim: ${sim}</p>
+              <p>- Não: ${nao}</p>
+              <p>- Abstenção: ${abstencao}</p>
+              <hr/>
+              <p><strong>Total de Votos:</strong> ${sim + nao + abstencao}</p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      await page.setContent(conteudoHTML, { waitUntil: 'domcontentloaded' });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
+      });
+
+      await browser.close();
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Length': pdfBuffer.length,
+        'Content-Disposition': `attachment; filename="relatorio_projeto_${id}.pdf"`
+      });
+
+      res.send(pdfBuffer);
+    }catch (error){
+      console.error('Erro ao gerar PDF:', error);
+      res.status(500).json({ mensagem: 'Erro ao gerar PDF.', erro: error.message})
     }
   }
 }
