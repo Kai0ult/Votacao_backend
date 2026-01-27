@@ -1,2 +1,7 @@
 node_modules
 .Ds_Store 
+.env
+DEPLOY.md
+Dockerfile
+fly.toml
+.dockerignore

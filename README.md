@@ -1,142 +1,92 @@
 # 🗳️ Sistema de Votação - Backend
 
-Backend completo para um sistema de votação desenvolvido com **Node.js**, **Express** e **PostgreSQL**, implementando autenticação segura com **Passport.js** e sessões.
+Backend robusto para sistema de votação desenvolvido com **Node.js**, **Express** e **PostgreSQL.**
 
-![Node.js](https://img.shields.io/badge/Node.js-18%25-green)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%25-blue)
-
----
-
-## 📖 Descrição do Projeto
-Este é o backend de um sistema de votação desenvolvido como parte de um projeto acadêmico.  
-O sistema permite o gerenciamento de **usuários**, **partidos políticos** e **projetos de lei**, com autenticação segura e controle de sessões.
-
-O backend foi construído com uma arquitetura modular, seguindo boas práticas de desenvolvimento e segurança, incluindo:
-- Criptografia de senhas com **bcrypt**  
-- Sessões persistentes com **PostgreSQL**  
-- Middleware de autenticação com **Passport.js**  
-- Validação de dados e separação clara entre camadas
+![Node.js](https://img.shields.io/badge/Node.js-20%2B-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-blue)
+![Docker](https://img.shields.io/badge/Docker-Enabled-blue)
 
 ---
 
-# ✨ Funcionalidades
-🔐 Autenticação e Sessão
-[✔] Cadastro de usuários com senha criptografada
+## 📖 Sobre o Projeto
 
-[✔] Login com Passport Local Strategy
+Este backend gerencia todo o fluxo de uma votação eletrônica segura, incluindo:
 
-[✔] Sessões persistentes com PostgreSQL
-
-[✔] Middleware de autenticação
-
-[✔] Logout com destruição de sessão
-
-👥 Gerenciamento de Usuários
-[✔] CRUD completo de usuários
-
-[✔] Associação com partidos políticos
-
-[✔] Validação de email único
-
-[✔] Diferentes tipos de usuário
-
-🏛️ Gerenciamento de Partidos
-[✔] CRUD completo de partidos
-
-[✔] Validação de sigla única
-
-[✔] Associação com usuários
-
-📋 Gerenciamento de Projetos
-[✔] CRUD completo de projetos
-
-[✔] Associação com usuários autores
-
-[✔] Controle de data de votação
+- **Autenticação e Autorização** com Passport.js e Sessões
+- **Gerenciamento de Entidades** (Usuários, Partidos, Projetos)
+- **Registro de Votos** com integridade referencial
+- **Geração de Relatórios** e Comprovantes (PDF)
 
 ---
 
-## 🛠️ Tecnologias Utilizadas Backend
+## 🚀 Como Rodar Localmente
 
-**[Node.js](https://nodejs.org/):** Ambiente de execução JavaScript
+### Pré-requisitos
 
-**[Express.js](https://expressjs.com/):** Framework web para Node.js
+- [Node.js](https://nodejs.org/) (v18 ou superior)
+- [PostgreSQL](https://www.postgresql.org/) instalado e rodando
 
-**[Sequelize](https://sequelize.org/):** ORM para PostgreSQL
+### 1. Instalação
 
-**[Passport.js](https://www.passportjs.org/):** Middleware de autenticação
-
-## Segurança e Autenticação
-**[bcryptjs](https://www.npmjs.com/package/bcryptjs):** Criptografia de senhas
-
-**[express-session](https://www.npmjs.com/package/express-session):** Gerenciamento de sessões
-
-**[connect-pg-simple](https://www.npmjs.com/package/connect-pg-simple):** Store de sessões no PostgreSQL
-
-## Banco de Dados
-**[PostgreSQL](https://www.postgresql.org/):** Banco de dados relacional
-
-**[pg](https://www.npmjs.com/package/pg):** Cliente PostgreSQL para Node.js
-
-## Utilidades
-**[CORS](https://www.npmjs.com/package/cors):** Habilitação de CORS
-
-**[dotenv](https://www.npmjs.com/package/dotenv):** Gerenciamento de variáveis de ambiente
-
-## 📋 Pré-requisitos
-
-- Node.js 18+
-- PostgreSQL 16+
-- npm ou yarn
-
-## 🚀 Como Executar o Projeto
-
-### 1. Clone o repositório
 ```bash
+# Clone o repositório
 git clone https://github.com/Kai0ult/Votacao_backend.git
 cd Votacao_backend
- ```
-### 2. Instale as dependências
-```bash
+
+# Instale as dependências
 npm install
- ```
+```
 
-### 3. Configure o Banco de Dados
-```bash
-CREATE DATABASE sistema_votacao;
- ```
+### 2. Configuração do Banco de Dados
 
-### 4. Configure as variáveis de ambiente
-```bash
-# Configurações do Banco de Dados
+1. Crie um banco de dados no PostgreSQL chamado `sistema_votacao`.
+2. Configure as variáveis de ambiente:
+   - Copie o arquivo de exemplo: `cp .env.example .env` (ou copie e renomeie manualmente)
+   - Edite o arquivo `.env` com suas credenciais do Postgres.
+
+**Exemplo de `.env`:**
+
+```ini
 DB_NAME=sistema_votacao
-DB_USER=seu_usuario_postgres
-DB_PASSWORD=sua_senha_postgres
+DB_USER=postgres
+DB_PASSWORD=sua_senha
 DB_HOST=localhost
 DB_PORT=5432
+SESSION_SECRET=uma_chave_super_secreta
+FRONTEND_URL=http://localhost:5173
+ADMIN_EMAIL=admin@teste.com
+ADMIN_PASSWORD=admin123
+ADMIN_CPF=12345678900
+```
 
-# Configurações de Sessão
-SESSION_SECRET=V@L1D@Ç@0
+### 3. Execução
 
-# Configurações do Frontend
-FRONTEND_URL=http://localhost:3001](http://localhost:5173
- ```
-
-### ⚠️ Importante: Modifique estas variáveis de acordo com seu ambiente:
-
-- DB_USER e DB_PASSWORD: Credenciais do seu PostgreSQL
-
-- SESSION_SECRET: String única e complexa para segurança das sessões
-
-- FRONTEND_URL: URL do seu frontend para configuração CORS
-
-### 5. Inicie o Servidor
 ```bash
-node index.js
- ```
+# Iniciar o servidor
+npm start
+```
+
+O servidor rodará em `http://localhost:3000`.
+O banco de dados será sincronizado automaticamente e o administrador inicial será criado.
+
 ---
-### 👨‍💻 Autores
 
-- Desenvolvido por Caio Souza, Igor Ryan & Tamara Silva.
+## 🛠️ Tecnologias Principais
 
-[![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Kai0ult)  
+- **Core:** Node.js, Express
+- **Banco de Dados:** PostgreSQL, Sequelize ORM
+- **Autenticação:** Passport.js, Express-Session, Connect-PG-Simple
+- **Segurança:** Bcrypt, CORS, Helmet
+- **Utilitários:** Puppeteer (Geração de PDFs), Dotenv
+
+---
+
+## 👨‍💻 Autores
+
+- Caio Souza
+- Igor Ryan
+- Tamara Silva
+
+---
+
+*Este projeto é parte de um trabalho acadêmico.*

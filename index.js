@@ -20,36 +20,42 @@ dotenv.config()
 const app = express();
 const PgStore = connectPgSimple(session)
 
+const sessionStoreConfig = process.env.DATABASE_URL
+  ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
+  : {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME
+  }
+
 app.use(
   session({
     store: new PgStore({
-      conObject: {
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
-        database: process.env.DB_NAME
-      }
+      conObject: sessionStoreConfig
     }),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000,
-      secure: false
+      secure: process.env.NODE_ENV === 'production'
     },
   })
 )
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME
-})
+const pool = process.env.DATABASE_URL
+  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  : new Pool({
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME
+  })
 
 // Função para garantir a existência da tabela de sessão
 async function criarTabelaSessao() {
@@ -67,7 +73,21 @@ async function criarTabelaSessao() {
   console.log("Tabela de sessão garantida.")
 }
 
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }))
+// CORS configurado para aceitar múltiplas origens
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',')
+  : ['http://localhost:5173']
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true
+}))
 app.use(express.json())
 
 // Depois da sessão
@@ -87,8 +107,9 @@ const iniciarServidor = async () => {
     await db.sequelize.sync({ alter: true })
     await semearAdmin()
     console.log('Sincronização com o banco de dados concluída com sucesso.')
-    app.listen(3000, () => {
-      console.log("Servidor em http://localhost:3000")
+    const PORT = process.env.PORT || 3000
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Servidor rodando na porta ${PORT}`)
     })
   } catch (error) {
     console.error('Falha ao sincronizar com o banco de dados: ', error)
