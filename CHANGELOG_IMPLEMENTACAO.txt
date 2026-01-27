@@ -1,0 +1,437 @@
+================================================================================
+                    DOCUMENTAÇÃO DE IMPLEMENTAÇÃO
+         Validação de Votação, Timestamp e Status Atualizado
+================================================================================
+
+Data: 2024
+Autor: Implementação realizada via Cursor AI
+
+================================================================================
+RESUMO DAS IMPLEMENTAÇÕES
+================================================================================
+
+Foram implementadas três funcionalidades principais:
+1. Validação se votação está aberta antes de registrar voto
+2. Registro automático de timestamp (createdAt e updatedAt) nos votos
+3. Endpoint para retornar status atualizado da votação
+
+================================================================================
+COMO FUNCIONA - EXPLICAÇÃO DETALHADA
+================================================================================
+
+1. FLUXO DE REGISTRO DE VOTO COM VALIDAÇÃO
+   ------------------------------------------------------------------------------
+   
+   Quando um usuário tenta registrar um voto (POST /api/votos):
+   
+   PASSO 1: Validação de Campos Obrigatórios
+   - Sistema verifica se usuario_id, projeto_id e opcao foram fornecidos
+   - Se faltar algum campo, retorna erro 400
+   
+   PASSO 2: Validação de Usuário
+   - Sistema busca o usuário pelo usuario_id no banco de dados
+   - Se usuário não existir, retorna erro 404 "Vereador não encontrado!"
+   
+   PASSO 3: Validação de Projeto
+   - Sistema busca o projeto pelo projeto_id no banco de dados
+   - Se projeto não existir, retorna erro 404 "Projeto não encontrado!"
+   
+   PASSO 4: VALIDAÇÃO DE VOTAÇÃO ABERTA (NOVO)
+   - Sistema verifica o campo estado do projeto
+   - Se estado !== 1, retorna erro 400 "Votação não está aberta para este projeto!"
+   - Se estado === 1, continua para próxima validação
+   
+   PASSO 5: Validação de Duplicidade
+   - Sistema verifica se o usuário já votou neste projeto
+   - Se já votou, retorna erro 400 "Este vereador já registrou um voto..."
+   - Se não votou, continua para registro
+   
+   PASSO 6: Registro do Voto
+   - Sistema cria o registro na tabela Votos
+   - Sequelize automaticamente adiciona createdAt e updatedAt (NOVO)
+   - Retorna sucesso 201 com os dados do voto incluindo timestamps
+   
+   RESULTADO:
+   - Voto registrado com sucesso OU
+   - Erro específico explicando o motivo da falha
+
+
+2. FLUXO DE OBTENÇÃO DE STATUS DA VOTAÇÃO
+   ------------------------------------------------------------------------------
+   
+   Quando um usuário consulta o status (GET /api/votacao/:projeto_id/status):
+   
+   PASSO 1: Extração do ID
+   - Sistema extrai o projeto_id dos parâmetros da URL
+   
+   PASSO 2: Busca do Projeto
+   - Sistema busca o projeto pelo ID no banco de dados
+   - Se não encontrar, retorna erro 404 "Projeto não encontrado!"
+   
+   PASSO 3: Contagem de Votos
+   - Sistema conta quantos votos existem para este projeto
+   - Usa Voto.count() com filtro where projeto_id = projeto_id
+   
+   PASSO 4: Montagem da Resposta
+   - Sistema monta objeto com:
+     * Informações do projeto (id, titulo, dt_votacao)
+     * Estado numérico (estado: 1 ou 0)
+     * Estado em texto (estado_texto: "Aberta" ou "Fechada")
+     * Total de votos (total_votos: número)
+     * Flag booleana (votacao_aberta: true ou false)
+   
+   PASSO 5: Retorno
+   - Retorna status 200 com objeto JSON completo
+   
+   RESULTADO:
+   - Informações completas sobre o status da votação em um único endpoint
+
+
+3. FUNCIONAMENTO DOS TIMESTAMPS
+   ------------------------------------------------------------------------------
+   
+   Como os timestamps são gerenciados:
+   
+   ANTES DA IMPLEMENTAÇÃO:
+   - Campos createdAt e updatedAt não eram criados automaticamente
+   - Era necessário definir manualmente no código
+   
+   APÓS A IMPLEMENTAÇÃO:
+   - Sequelize gerencia automaticamente os timestamps
+   - Quando um voto é criado:
+     * createdAt = data/hora atual do momento da criação
+     * updatedAt = mesma data/hora (inicialmente igual ao createdAt)
+   - Se o voto for atualizado no futuro:
+     * createdAt = mantém data/hora original
+     * updatedAt = atualiza para data/hora da modificação
+   
+   ONDE APARECEM:
+   - Na resposta do POST /api/votos (ao criar voto)
+   - Na resposta do GET /api/votos (ao listar votos)
+   - No banco de dados na tabela Votos
+   
+   FORMATO:
+   - ISO 8601 com timezone
+   - Exemplo: "2024-01-15T14:30:00.000Z"
+   - Fácil de converter para qualquer formato no frontend
+
+
+4. CONTROLE DE ESTADO DA VOTAÇÃO
+   ------------------------------------------------------------------------------
+   
+   Como funciona o controle de abertura/fechamento:
+   
+   ESTRUTURA:
+   - Cada projeto tem um campo "estado" (INTEGER) na tabela Projetos
+   - estado = 1 significa votação ABERTA
+   - estado = 0 (ou qualquer outro valor) significa votação FECHADA
+   
+   COMO ABRIR UMA VOTAÇÃO:
+   - Administrador atualiza o projeto no banco:
+     UPDATE "Projetos" SET "estado" = 1 WHERE id = <projeto_id>;
+   - A partir deste momento, votos podem ser registrados
+   
+   COMO FECHAR UMA VOTAÇÃO:
+   - Administrador atualiza o projeto no banco:
+     UPDATE "Projetos" SET "estado" = 0 WHERE id = <projeto_id>;
+   - A partir deste momento, nenhum voto pode ser registrado
+   - Tentativas de voto retornam erro 400
+   
+   VERIFICAÇÃO AUTOMÁTICA:
+   - Toda vez que alguém tenta votar, o sistema verifica o estado
+   - Não é necessário fazer verificação manual antes de votar
+   - O endpoint de status também mostra o estado atual
+
+
+5. INTEGRAÇÃO ENTRE AS FUNCIONALIDADES
+   ------------------------------------------------------------------------------
+   
+   Como as funcionalidades trabalham juntas:
+   
+   CENÁRIO 1: Verificar Status Antes de Votar
+   - Usuário consulta GET /api/votacao/:id/status
+   - Vê que votacao_aberta = true
+   - Sabe que pode votar
+   - Faz POST /api/votos
+   - Sistema valida automaticamente e registra o voto
+   
+   CENÁRIO 2: Tentar Votar em Votação Fechada
+   - Usuário tenta POST /api/votos
+   - Sistema verifica estado do projeto
+   - Estado !== 1, então retorna erro 400
+   - Usuário pode consultar status para entender o motivo
+   
+   CENÁRIO 3: Acompanhar Progresso da Votação
+   - Usuário consulta status periodicamente
+   - Vê total_votos aumentando
+   - Vê timestamps dos votos para saber quando foram registrados
+   - Pode verificar se votação ainda está aberta
+   
+   BENEFÍCIOS:
+   - Controle total sobre quando votos podem ser registrados
+   - Rastreabilidade completa com timestamps
+   - Transparência com endpoint de status
+   - Prevenção de erros com validações automáticas
+
+================================================================================
+1. TIMESTAMP NO MODELO VOTO
+================================================================================
+
+ARQUIVO MODIFICADO: models/Voto.js
+
+MUDANÇA REALIZADA:
+- Adicionado parâmetro { timestamps: true } na definição do modelo
+- Isso habilita automaticamente os campos createdAt e updatedAt
+
+CÓDIGO ADICIONADO:
+  }, {
+    timestamps: true  // Habilita createdAt e updatedAt
+  })
+
+RESULTADO:
+- Todos os novos votos registrados terão automaticamente:
+  * createdAt: timestamp de quando o voto foi criado
+  * updatedAt: timestamp de quando o voto foi atualizado (inicialmente igual ao createdAt)
+
+MIGRAÇÃO DO BANCO:
+- As colunas createdAt e updatedAt já existiam na tabela Votos
+- Nenhuma migração adicional foi necessária
+- Registros existentes já possuíam timestamps válidos
+
+================================================================================
+2. VALIDAÇÃO DE VOTAÇÃO ABERTA
+================================================================================
+
+ARQUIVO MODIFICADO: controllers/VotacaoController.js
+
+MUDANÇA REALIZADA:
+- Adicionada validação no método registrarVoto
+- Verifica se projeto.estado === 1 antes de permitir o registro do voto
+
+CÓDIGO ADICIONADO (após linha 25):
+  // Verificar se a votação está aberta
+  if (projeto.estado !== 1) {
+    return res.status(400).json({ 
+      mensagem: 'Votação não está aberta para este projeto!' 
+    })
+  }
+
+COMPORTAMENTO:
+- Se estado === 1: voto é permitido e registrado
+- Se estado !== 1: retorna erro 400 com mensagem explicativa
+- Validação ocorre após verificar se projeto existe
+- Validação ocorre antes de verificar duplicidade de voto
+
+CONVENÇÃO DE ESTADO:
+- estado = 1: Votação ABERTA (permite votos)
+- estado = 0 ou outros: Votação FECHADA (não permite votos)
+
+================================================================================
+3. ENDPOINT DE STATUS DA VOTAÇÃO
+================================================================================
+
+ARQUIVO MODIFICADO: controllers/VotacaoController.js
+
+MÉTODO CRIADO: obterStatusVotacao
+
+FUNCIONALIDADE:
+- Retorna informações completas sobre o status de uma votação
+- Inclui estado, total de votos, e informações do projeto
+
+RESPOSTA DO ENDPOINT:
+{
+  "projeto_id": 1,
+  "titulo": "Título do Projeto",
+  "estado": 1,
+  "estado_texto": "Aberta" ou "Fechada",
+  "dt_votacao": "2024-01-15T10:00:00.000Z",
+  "total_votos": 5,
+  "votacao_aberta": true ou false
+}
+
+ARQUIVO MODIFICADO: routes/votacao.js
+
+ROTA ADICIONADA:
+  router.get("/votacao/:projeto_id/status", 
+    ensureAuthenticated, 
+    VotacaoController.obterStatusVotacao
+  )
+
+ENDPOINT COMPLETO:
+  GET /api/votacao/:projeto_id/status
+
+AUTENTICAÇÃO:
+- Requer autenticação (ensureAuthenticated)
+- Usuários logados podem acessar
+
+VALIDAÇÕES:
+- Verifica se projeto existe (retorna 404 se não existir)
+- Conta total de votos do projeto
+- Retorna estado em formato numérico e texto
+
+================================================================================
+4. CORREÇÃO: MÉTODO buscarPorId NO PROJETOCONTROLLER
+================================================================================
+
+ARQUIVO MODIFICADO: controllers/ProjetoController.js
+
+PROBLEMA RESOLVIDO:
+- Rota GET /api/projetos/:id estava chamando método inexistente
+- Erro: "argument handler must be a function"
+
+MÉTODO CRIADO: buscarPorId
+
+FUNCIONALIDADE:
+- Busca um projeto específico por ID
+- Retorna 404 se projeto não existir
+- Retorna projeto completo se existir
+
+CÓDIGO ADICIONADO:
+  buscarPorId = async (req, res) => {
+    try {
+      const { id } = req.params
+      const projeto = await Projeto.findByPk(id)
+      
+      if (!projeto) {
+        return res.status(404).json({ mensagem: 'Projeto não encontrado!' })
+      }
+      
+      res.status(200).json(projeto)
+    } catch (erro) {
+      console.error('Erro ao buscar projeto:', erro)
+      res.status(500).json({ mensagem: 'Erro interno ao buscar projeto', erro: erro.message })
+    }
+  }
+
+================================================================================
+5. MIGRAÇÃO: ADIÇÃO DA COLUNA ESTADO NA TABELA PROJETOS
+================================================================================
+
+PROBLEMA IDENTIFICADO:
+- Erro: "column estado does not exist"
+- Modelo Projeto tinha campo estado definido, mas coluna não existia no banco
+
+SOLUÇÃO APLICADA:
+- Script executado para adicionar coluna estado na tabela Projetos
+- Coluna adicionada como INTEGER com DEFAULT 0
+- Projetos existentes atualizados com estado = 0 (fechada)
+
+SQL EXECUTADO:
+  ALTER TABLE "Projetos" 
+  ADD COLUMN "estado" INTEGER DEFAULT 0;
+  
+  UPDATE "Projetos" 
+  SET "estado" = 0 
+  WHERE "estado" IS NULL;
+
+RESULTADO:
+- Coluna estado agora existe na tabela Projetos
+- Todos os projetos existentes têm estado = 0 por padrão
+- Novos projetos podem ter estado definido no cadastro
+
+================================================================================
+ARQUIVOS MODIFICADOS - RESUMO
+================================================================================
+
+1. models/Voto.js
+   - Adicionado timestamps: true
+
+2. controllers/VotacaoController.js
+   - Adicionada validação de votação aberta em registrarVoto
+   - Criado método obterStatusVotacao
+
+3. routes/votacao.js
+   - Adicionada rota GET /api/votacao/:projeto_id/status
+
+4. controllers/ProjetoController.js
+   - Criado método buscarPorId
+
+5. Banco de Dados
+   - Adicionada coluna estado na tabela Projetos
+
+================================================================================
+ENDPOINTS DISPONÍVEIS
+================================================================================
+
+VOTAÇÃO:
+- GET  /api/votacao/:projeto_id/status  - Obter status da votação (NOVO)
+- GET  /api/votos                       - Listar todos os votos
+- POST /api/votos                       - Registrar voto (com validação de estado)
+
+PROJETO:
+- GET  /api/projetos/:id                - Buscar projeto por ID (CORRIGIDO)
+
+================================================================================
+VALIDAÇÕES IMPLEMENTADAS
+================================================================================
+
+1. Validação de Votação Aberta:
+   - Verifica se projeto.estado === 1 antes de registrar voto
+   - Retorna erro 400 se votação estiver fechada
+   - Mensagem: "Votação não está aberta para este projeto!"
+
+2. Validação de Projeto Existente:
+   - Verifica se projeto existe antes de obter status
+   - Retorna erro 404 se projeto não existir
+
+3. Validação de Duplicidade:
+   - Mantida validação existente (não permite votar duas vezes)
+
+================================================================================
+CONVENÇÕES E PADRÕES
+================================================================================
+
+ESTADO DO PROJETO:
+- 1 = Votação ABERTA (permite votos)
+- 0 = Votação FECHADA (não permite votos)
+
+OPÇÃO DE VOTO:
+- 1 = Sim
+- 2 = Não
+- 3 = Abstenção
+
+TIMESTAMPS:
+- createdAt: Data/hora de criação do voto
+- updatedAt: Data/hora da última atualização do voto
+- Formato: ISO 8601 (ex: "2024-01-15T14:30:00.000Z")
+
+================================================================================
+TESTES REALIZADOS
+================================================================================
+
+1. ✓ Validação de votação fechada (retorna erro 400)
+2. ✓ Registro de voto em votação aberta (sucesso com timestamps)
+3. ✓ Obtenção de status da votação (retorna informações completas)
+4. ✓ Verificação de timestamps nos votos registrados
+5. ✓ Validação de projeto inexistente (retorna 404)
+
+================================================================================
+PRÓXIMOS PASSOS SUGERIDOS
+================================================================================
+
+1. Para abrir uma votação:
+   UPDATE "Projetos" SET "estado" = 1 WHERE id = <projeto_id>;
+
+2. Para fechar uma votação:
+   UPDATE "Projetos" SET "estado" = 0 WHERE id = <projeto_id>;
+
+3. Testar no Insomnia/Postman:
+   - Fazer login primeiro
+   - Testar GET /api/votacao/:id/status
+   - Testar POST /api/votos com projeto aberto
+   - Testar POST /api/votos com projeto fechado (deve falhar)
+
+================================================================================
+NOTAS TÉCNICAS
+================================================================================
+
+- Sequelize sync() não adiciona colunas novas automaticamente em tabelas existentes
+- Foi necessário executar script SQL para adicionar coluna estado
+- Timestamps são gerenciados automaticamente pelo Sequelize quando habilitados
+- Autenticação é requerida em todas as rotas de votação
+- Cookies de sessão são gerenciados automaticamente pelo Express Session
+
+================================================================================
+FIM DA DOCUMENTAÇÃO
+================================================================================
+

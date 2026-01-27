@@ -9,6 +9,7 @@ import session from "express-session"
 import passport from "passport"
 import connectPgSimple from "connect-pg-simple"
 import inicializarPassport from "./config/autenticacao.js"
+import { semearAdmin } from "./config/seeder.js"
 import dotenv from 'dotenv'
 import pkg from 'pg'
 
@@ -84,6 +85,7 @@ const iniciarServidor = async () => {
   try {
     await criarTabelaSessao()
     await db.sequelize.sync({ alter: true })
+    await semearAdmin()
     console.log('Sincronização com o banco de dados concluída com sucesso.')
     app.listen(3000, () => {
       console.log("Servidor em http://localhost:3000")
