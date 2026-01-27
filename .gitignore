@@ -5,3 +5,4 @@ DEPLOY.md
 Dockerfile
 fly.toml
 .dockerignore
+.github

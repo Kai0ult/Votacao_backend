@@ -18,6 +18,8 @@ const { Pool } = pkg
 dotenv.config()
 
 const app = express();
+// Configuração essencial para Fly.io/Proxy (permite cookies seguros)
+app.set('trust proxy', 1);
 const PgStore = connectPgSimple(session)
 
 const sessionStoreConfig = process.env.DATABASE_URL
@@ -100,6 +102,15 @@ app.use('/api', usuarioRoutas)
 app.use('/api', partidoRoutas)
 app.use('/api', projetoRoutas)
 app.use('/api', votacaoRoutas)
+
+// Rota raiz para verificação de saúde (Health Check)
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'online',
+    message: 'Sistema de Votação API rodando com sucesso!',
+    version: '1.0.0'
+  })
+})
 
 const iniciarServidor = async () => {
   try {
