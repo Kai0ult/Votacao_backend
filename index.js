@@ -76,16 +76,23 @@ async function criarTabelaSessao() {
 }
 
 // CORS configurado para aceitar múltiplas origens
+// CORS configurado para aceitar múltiplas origens
 const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',')
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim().replace(/\/$/, "")) // Remove barra final e espaços
   : ['http://localhost:5173']
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Permite requisições sem origem (como apps mobile ou curl)
+    if (!origin) return callback(null, true);
+
+    // Verifica se a origem está na lista (removendo barra final se houver)
+    const originClean = origin.replace(/\/$/, "");
+    if (allowedOrigins.includes(originClean)) {
       callback(null, true)
     } else {
-      callback(new Error('Not allowed by CORS'))
+      console.log(`[CORS] Origem bloqueada: ${origin}. Permitidos: ${allowedOrigins.join(', ')}`);
+      callback(new Error(`Not allowed by CORS. Origin: ${origin}`))
     }
   },
   credentials: true
