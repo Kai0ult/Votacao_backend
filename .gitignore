@@ -8,3 +8,4 @@ fly.toml
 .github
 .scannerwork
 sonar-project.properties
+coverage/

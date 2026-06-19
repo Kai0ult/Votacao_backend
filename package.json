@@ -16,7 +16,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -31,10 +32,12 @@
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "puppeteer": "^24.35.0",
-    "sequelize": "^6.37.7"
+    "sequelize": "^3.30.0"
   },
   "devDependencies": {
+    "@jest/globals": "^27.5.1",
     "docx": "^9.6.1",
+    "jest": "^25.0.0",
     "pdfkit": "^0.18.0"
   }
 }
