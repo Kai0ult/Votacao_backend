@@ -32,5 +32,9 @@
     "pg-hstore": "^2.3.4",
     "puppeteer": "^24.35.0",
     "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "docx": "^9.6.1",
+    "pdfkit": "^0.18.0"
   }
 }
