@@ -35,9 +35,9 @@
     "sequelize": "^3.30.0"
   },
   "devDependencies": {
-    "@jest/globals": "^27.5.1",
+    "@jest/globals": "^30.4.1",
     "docx": "^9.6.1",
-    "jest": "^25.0.0",
+    "jest": "^30.4.2",
     "pdfkit": "^0.18.0"
   }
 }

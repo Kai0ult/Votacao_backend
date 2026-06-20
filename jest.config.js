@@ -11,6 +11,6 @@ export default {
     '!coverage/**'
   ],
   coverageReporters: ['text', 'lcov', 'clover'],
-  testMatch: ['**/__tests__/**/*.test.js'],
+  testMatch: ['**/tests/**/*.test.js'],
   extensionsToTreatAsEsm: []
 };
