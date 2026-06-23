@@ -1,6 +1,7 @@
 import {
   validaEmail,
-  validaCpf
+  validaCpf,
+  validaSenha
 } from '../../utils/validators.js';
 
 describe('validators.js', () => {
@@ -48,5 +49,50 @@ describe('validators.js', () => {
     });
 
   });
+
+  describe('validaSenha', () => {
+
+    test('deve aceitar senha que atende todos os requisitos', () => {
+
+        // Arrange
+        const senha = 'Senha@123';
+
+        // Act
+        const resultado = validaSenha(senha);
+
+        // Assert
+        expect(resultado).toEqual({
+        eValido: true,
+        erros: []
+        });
+
+    });
+
+    test('deve retornar múltiplos erros para senha que falha em tudo', () => {
+
+        // Arrange
+        const senha = 'abc';
+
+        // Act
+        const resultado = validaSenha(senha);
+
+        // Assert
+        expect(resultado.eValido).toBe(false);
+
+        expect(resultado.erros).toContain(
+        'A senha deve ter no mínimo 8 caracteres.'
+        );
+
+        expect(resultado.erros).toContain(
+        'A senha deve conter pelo menos uma letra maiúscula.'
+        );
+
+        expect(resultado.erros).toContain(
+        'A senha deve conter pelo menos um caractere especial.'
+        );
+
+    });
+
+    });
 
 });
