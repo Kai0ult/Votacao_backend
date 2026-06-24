@@ -47,7 +47,7 @@ describe('Middlewares de Autenticação', () => {
   });
 
   describe('checkRole', () => {
-    // Teste 3: Verifica se o middleware permite o acesso para o cargo correto (Admin = tipo 2) (Igor Ryan)
+// Teste 3: Verifica se o middleware permite o acesso para o cargo correto (Admin = tipo 2) (Igor Ryan)
     it('deve chamar next() quando tipo e admin', () => {
       const req = mockReq(true, { tipo: 2 });
       const res = mockRes();
