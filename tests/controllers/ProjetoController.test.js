@@ -4,6 +4,8 @@ import { jest } from '@jest/globals';
 
 const mockProjetoCreate = jest.fn();
 const mockProjetoFindAll = jest.fn();
+const mockProjetoFindByPk = jest.fn();
+const mockVotoFindAll = jest.fn();
 
 
 jest.unstable_mockModule('../../models/index.js', () => ({
@@ -11,10 +13,10 @@ jest.unstable_mockModule('../../models/index.js', () => ({
     Projeto: {
       create: mockProjetoCreate,
       findAll: mockProjetoFindAll,
-      findByPk: jest.fn(),
+      findByPk: mockProjetoFindByPk,
     },
     Voto: {
-      findAll: jest.fn(),
+      findAll: mockVotoFindAll,
     },
     Usuario: {},
     Partido: {},
@@ -102,6 +104,107 @@ describe('ProjetoController', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(projetosMock);
       expect(mockProjetoFindAll).toHaveBeenCalled();
+    });
+  });
+
+  describe('buscarPorId', () => {
+    it('deve retornar 404 quando projeto nao existe', async () => {
+      const req = mockReq({}, { id: 999 });
+      const res = mockRes();
+      mockProjetoFindByPk.mockResolvedValue(null);
+
+      await ProjetoController.buscarPorId(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ mensagem: 'Projeto não encontrado!' });
+      expect(mockProjetoFindByPk).toHaveBeenCalledWith(999);
+    });
+  });
+
+  describe('obterResultado', () => {
+    it('deve calcular totais de sim/nao/abstencao corretamente', async () => {
+      const req = mockReq({}, { id: 1 });
+      const res = mockRes();
+      mockVotoFindAll.mockResolvedValue([
+        { opcao: 1, total_votos: '3' },
+        { opcao: 2, total_votos: '1' },
+        { opcao: 3, total_votos: '2' }
+      ]);
+
+      await ProjetoController.obterResultado(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        projeto_id: 1,
+        total_votos: 6,
+        detalhes: {
+          sim: 3,
+          nao: 1,
+          abstencao: 2
+        }
+      });
+      expect(mockVotoFindAll).toHaveBeenCalled();
+    });
+  });
+
+  describe('obterResultadoPorPartido', () => {
+    it('deve agrupar votos por sigla do partido', async () => {
+      const req = mockReq({}, { id: 1 });
+      const res = mockRes();
+      mockVotoFindAll.mockResolvedValue([
+        { opcao: 1, usuario: { nome: 'User 1', partido: { sigla: 'PT' } } },
+        { opcao: 2, usuario: { nome: 'User 2', partido: { sigla: 'PT' } } },
+        { opcao: 1, usuario: { nome: 'User 3', partido: { sigla: 'PSDB' } } },
+        { opcao: 3, usuario: { nome: 'User 4', partido: null } }
+      ]);
+
+      await ProjetoController.obterResultadoPorPartido(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        projeto_id: 1,
+        total_votos: 4,
+        por_partido: {
+          PT: { sim: 1, nao: 1, abstencao: 0 },
+          PSDB: { sim: 1, nao: 0, abstencao: 0 },
+          'Sem Partido': { sim: 0, nao: 0, abstencao: 1 }
+        }
+      });
+      expect(mockVotoFindAll).toHaveBeenCalled();
+    });
+  });
+
+  describe('obterResultadoPorVereador', () => {
+    it('deve converter opcao numerica para texto', async () => {
+      const req = mockReq({}, { id: 1 });
+      const res = mockRes();
+
+      // Mock _buscarVotosDetalhados on ProjetoController instance directly
+      const mockVotosDetalhados = [
+        { opcao: 1, usuario: { nome: 'Vereador A', partido: { sigla: 'PT' } } },
+        { opcao: 2, usuario: { nome: 'Vereador B', partido: null } },
+        { opcao: 3, usuario: { nome: 'Vereador C', partido: { sigla: 'PSDB' } } },
+        { opcao: 4, usuario: { nome: 'Vereador D', partido: null } }
+      ];
+      const originalBuscarVotos = ProjetoController._buscarVotosDetalhados;
+      ProjetoController._buscarVotosDetalhados = jest.fn().mockResolvedValue(mockVotosDetalhados);
+
+      await ProjetoController.obterResultadoPorVereador(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        projeto_id: 1,
+        listagem: [
+          { vereador: 'Vereador A', partido: 'PT', voto: 'Sim' },
+          { vereador: 'Vereador B', partido: 'Sem Partido', voto: 'Não' },
+          { vereador: 'Vereador C', partido: 'PSDB', voto: 'Abstenção' },
+          { vereador: 'Vereador D', partido: 'Sem Partido', voto: 'Desconhecido' }
+        ]
+      });
+      expect(ProjetoController._buscarVotosDetalhados).toHaveBeenCalledWith(1);
+
+      // Restore original function
+      ProjetoController._buscarVotosDetalhados = originalBuscarVotos;
     });
   });
 });
