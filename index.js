@@ -18,6 +18,9 @@ const { Pool } = pkg
 dotenv.config()
 
 const app = express();
+// Desabilita o cabeçalho X-Powered-By (corrige o Security Hotspot do SonarQube)
+app.disable('x-powered-by');
+
 // Configuração essencial para Fly.io/Proxy (permite cookies seguros)
 app.set('trust proxy', 1);
 const PgStore = connectPgSimple(session)
