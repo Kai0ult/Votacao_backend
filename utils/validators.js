@@ -14,7 +14,7 @@ export function validaCpf(cpf){
     let Soma = 0
     let Resto
 
-    let strCPF = String(cpf).replace(/[^\d]/g, '')
+    let strCPF = String(cpf).replaceAll(/[^\d]/g, '')
     
     if (strCPF.length !== 11){
         return { eValido: false, erros: ["O CPF deve ter 11 dígitos."] };

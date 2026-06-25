@@ -6,7 +6,7 @@ const { Projeto, Voto, Usuario, Partido} = db
 class ProjetoController {
   cadastrar = async (req, res) => {
     try {
-      const { titulo, ementa, autor, tipo, dt_votacao, usuario_id, estado } = req.body
+      const { titulo, ementa, autor, tipo, dt_votacao, usuario_id } = req.body
 
       const novoProjeto = await Projeto.create({
         titulo,
@@ -221,22 +221,7 @@ class ProjetoController {
     }
   }
 
-  buscarPorId = async (req, res) => {
-    try {
-      const { id } = req.params
 
-      const projeto = await Projeto.findByPk(id)
-
-      if (!projeto) {
-        return res.status(404).json({ mensagem: "Projeto não encontrado!" })
-      }
-
-      res.json(projeto)
-    } catch (erro) {
-      console.error("Erro ao buscar projeto:", erro)
-      res.status(500).json({ mensagem: "Erro interno", erro: erro.message })
-    }
-  }
 
   _buscarVotosDetalhados = async (projetoId) => {
     return await Voto.findAll({

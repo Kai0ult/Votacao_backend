@@ -4,6 +4,60 @@ import passport from "passport";
 import { validaCpf, validaEmail, validaSenha } from '../utils/validators.js';
 const { Usuario } = db
 
+// Funções auxiliares para redução de complexidade cognitiva
+async function validarEmailUnico(email, usuario) {
+    if (email && email !== usuario.email) {
+        const userExistente = await Usuario.findOne({ where: { email } })
+        if (userExistente) {
+            return { status: 400, mensagem: 'Email já cadastrado em outro usuário!' }
+        }
+    }
+    return null
+}
+
+async function validarPartidoExiste(partido_id, usuario) {
+    if (partido_id && partido_id !== usuario.partido_id) {
+        const partidoExistente = await db.Partido.findByPk(partido_id)
+        if (!partidoExistente) {
+            return { status: 400, mensagem: 'Partido informado não existe!' }
+        }
+    }
+    return null
+}
+
+async function validarEProcessarSenha(senhaAtual, senhaNova, senhaHashUsuario) {
+    const temSenhaNova = !!senhaNova
+    const temSenhaAtual = !!senhaAtual
+
+    if (temSenhaNova !== temSenhaAtual) {
+        return {
+            status: 400,
+            mensagem: 'Para alterar a senha, preencha tanto a senha atual quanto a nova.'
+        }
+    }
+
+    if (temSenhaNova && temSenhaAtual) {
+        const senhaAtualValida = await bcrypt.compare(senhaAtual, senhaHashUsuario)
+        if (!senhaAtualValida) {
+            return { status: 401, mensagem: 'Senha atual incorreta.' }
+        }
+
+        const validacaoSenhaNova = validaSenha(senhaNova)
+        if (!validacaoSenhaNova.eValido) {
+            return {
+                status: 400,
+                mensagem: 'A senha nova não atende aos requisitos.',
+                erros: validacaoSenhaNova.erros
+            }
+        }
+
+        const novaSenhaCriptografada = await bcrypt.hash(senhaNova, 10)
+        return { senha: novaSenhaCriptografada }
+    }
+
+    return {}
+}
+
 class UsuarioController {
     // Cadastrar
     cadastrar = async (req, res) => {
@@ -16,20 +70,20 @@ class UsuarioController {
             }
 
             const validacaoEmail = validaEmail(email)
-            if (!validacaoEmail.eValido){
+            if (!validacaoEmail.eValido) {
                 return res.status(400).json({ mensagem: validacaoEmail.erros[0] });
             }
 
             const validacaoCPF = validaCpf(cpf)
-            if (!validacaoCPF.eValido){
+            if (!validacaoCPF.eValido) {
                 return res.status(400).json({ mensagem: validacaoCPF.erros[0] });
             }
 
             const validacaoSenha = validaSenha(senha);
             if (!validacaoSenha.eValido) {
-                return res.status(400).json({ 
-                    mensagem: 'A senha não atende aos requisitos.', 
-                    erros: validacaoSenha.erros 
+                return res.status(400).json({
+                    mensagem: 'A senha não atende aos requisitos.',
+                    erros: validacaoSenha.erros
                 });
             }
 
@@ -71,7 +125,7 @@ class UsuarioController {
                 if (erro) return res.status(500).json({ mensagem: "Erro ao criar sessão" })
                 return res.json({
                     mensagem: "Login realizado com sucesso!",
-                    usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, tipo:usuario.tipo },
+                    usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, tipo: usuario.tipo },
                 })
             })
         })(req, res, next)
@@ -117,44 +171,27 @@ class UsuarioController {
                 return res.status(404).json({ mensagem: 'Usuário não encontrado!' })
             }
 
-
-            if (email && email !== usuario.email) {
-                const userExistente = await Usuario.findOne({ where: { email } })
-                if (userExistente) {
-                    return res.status(400).json({ mensagem: 'Email já cadastrado em outro usuário!' })
-                }
+            const erroEmail = await validarEmailUnico(email, usuario)
+            if (erroEmail) {
+                return res.status(erroEmail.status).json({ mensagem: erroEmail.mensagem })
             }
 
+            const erroPartido = await validarPartidoExiste(partido_id, usuario)
+            if (erroPartido) {
+                return res.status(erroPartido.status).json({ mensagem: erroPartido.mensagem })
+            }
 
-            if (partido_id && partido_id !== usuario.partido_id) {
-                const partidoExistente = await db.Partido.findByPk(partido_id)
-                if (!partidoExistente) {
-                    return res.status(400).json({ mensagem: 'Partido informado não existe!' })
-                }
+            const resultadoSenha = await validarEProcessarSenha(senhaAtual, senhaNova, usuario.senha)
+            if (resultadoSenha.status) {
+                return res.status(resultadoSenha.status).json({
+                    mensagem: resultadoSenha.mensagem,
+                    erros: resultadoSenha.erros
+                })
             }
 
             const dadosAtualizacao = { nome, email, cpf, tipo, partido_id }
-
-            if ((senhaNova && !senhaAtual) || (!senhaNova && senhaAtual)) {
-                return res.status(400).json({ 
-                    mensagem: 'Para alterar a senha, preencha tanto a senha atual quanto a nova.' 
-                });
-            }
-            // Se uma nova senha foi fornecida, criptografar
-            if (senhaNova && senhaAtual) {
-                const senhaAtualValida = await bcrypt.compare(senhaAtual, usuario.senha);
-                if(senhaAtualValida){
-                    const validacaoSenhaNova = validaSenha(senhaNova);
-                    if (!validacaoSenhaNova.eValido) {
-                        return res.status(400).json({ 
-                            mensagem: 'A senha nova não atende aos requisitos.', 
-                            erros: validacaoSenhaNova.erros 
-                        });
-                    }
-                    dadosAtualizacao.senha = await bcrypt.hash(senhaNova, 10)
-                }else{
-                    return res.status(401).json({ mensagem: 'Senha atual incorreta.'})
-                }
+            if (resultadoSenha.senha) {
+                dadosAtualizacao.senha = resultadoSenha.senha
             }
 
             await usuario.update(dadosAtualizacao)
