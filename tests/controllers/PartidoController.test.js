@@ -213,4 +213,56 @@ describe("PartidoController", () => {
       });
     });
   });
+
+  it("deve rejeitar sigla já cadastrada em outro partido", async () => {
+    // Arrange
+    const req = mockReq(
+      {
+        nome: "Partido Atualizado",
+        sigla: "PT",
+      },
+      {
+        id: 1,
+      },
+    );
+
+    const res = mockRes();
+
+    // Partido atual encontrado
+    const partido = {
+      id: 1,
+      nome: "Partido Atual",
+      sigla: "PAT",
+    };
+
+    // Outro partido utilizando a sigla informada
+    const partidoExistente = {
+      id: 2,
+      sigla: "PT",
+    };
+
+    mockFindByPk.mockResolvedValue(partido);
+
+    mockFindOne.mockResolvedValue(partidoExistente);
+
+    // Act
+    await PartidoController.editar(req, res);
+
+    // Assert
+
+    // Verifica se o controller encontrou o partido
+    expect(mockFindByPk).toHaveBeenCalledWith(1);
+
+    // Verifica se procurou outra ocorrência da sigla
+    expect(mockFindOne).toHaveBeenCalledWith({
+      where: { sigla: "PT" },
+    });
+
+    // Deve retornar erro de conflito
+    expect(res.status).toHaveBeenCalledWith(400);
+
+    expect(res.json).toHaveBeenCalledWith({
+      mensagem: "Sigla já cadastrada em outro partido!",
+    });
+  });
 }); //aaaa
