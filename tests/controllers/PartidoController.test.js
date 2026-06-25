@@ -154,4 +154,115 @@ describe("PartidoController", () => {
       });
     });
   });
-});
+
+  describe("editar", () => {
+    it("deve atualizar partido quando sigla é nova e não existe", async () => {
+      // Arrange
+      // Simula os dados enviados para edição
+      const req = mockReq(
+        {
+          nome: "Partido Atualizado",
+          sigla: "PAT",
+        },
+        {
+          id: 1,
+        },
+      );
+
+      const res = mockRes();
+
+      // Simula um partido já existente no banco
+      const partido = {
+        id: 1,
+        nome: "Partido Antigo",
+        sigla: "PA",
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      // Simula que o partido foi encontrado
+      mockFindByPk.mockResolvedValue(partido);
+
+      // Simula que não existe outro partido usando a nova sigla
+      mockFindOne.mockResolvedValue(null);
+
+      // Act
+      await PartidoController.editar(req, res);
+
+      // Assert
+
+      // Verifica se buscou o partido pelo ID
+      expect(mockFindByPk).toHaveBeenCalledWith(1);
+
+      // Verifica se pesquisou a nova sigla
+      expect(mockFindOne).toHaveBeenCalledWith({
+        where: { sigla: "PAT" },
+      });
+
+      // Verifica se executou a atualização
+      expect(partido.update).toHaveBeenCalledWith({
+        nome: "Partido Atualizado",
+        sigla: "PAT",
+      });
+
+      // Verifica resposta de sucesso
+      expect(res.status).toHaveBeenCalledWith(200);
+
+      expect(res.json).toHaveBeenCalledWith({
+        mensagem: "Partido atualizado com sucesso!",
+        partido,
+      });
+    });
+  });
+
+  it("deve rejeitar sigla já cadastrada em outro partido", async () => {
+    // Arrange
+    const req = mockReq(
+      {
+        nome: "Partido Atualizado",
+        sigla: "PT",
+      },
+      {
+        id: 1,
+      },
+    );
+
+    const res = mockRes();
+
+    // Partido atual encontrado
+    const partido = {
+      id: 1,
+      nome: "Partido Atual",
+      sigla: "PAT",
+    };
+
+    // Outro partido utilizando a sigla informada
+    const partidoExistente = {
+      id: 2,
+      sigla: "PT",
+    };
+
+    mockFindByPk.mockResolvedValue(partido);
+
+    mockFindOne.mockResolvedValue(partidoExistente);
+
+    // Act
+    await PartidoController.editar(req, res);
+
+    // Assert
+
+    // Verifica se o controller encontrou o partido
+    expect(mockFindByPk).toHaveBeenCalledWith(1);
+
+    // Verifica se procurou outra ocorrência da sigla
+    expect(mockFindOne).toHaveBeenCalledWith({
+      where: { sigla: "PT" },
+    });
+
+    // Deve retornar erro de conflito
+    expect(res.status).toHaveBeenCalledWith(400);
+
+    expect(res.json).toHaveBeenCalledWith({
+      mensagem: "Sigla já cadastrada em outro partido!",
+    });
+  });
+}); //aaaa
